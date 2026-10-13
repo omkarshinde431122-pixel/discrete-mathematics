@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hierarchical File & Folder Explorer</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Application Bar -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            <line x1="12" y1="11" x2="12" y2="17"></line>
+            <line x1="9" y1="14" x2="15" y2="14"></line>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">HierarchyFS</h1>
+          <p class="brand-subtitle">Interactive File & Folder Organization Model</p>
+        </div>
+      </div>
+
+      <!-- Mode Switcher: File Explorer vs Decision Tree -->
+      <div class="header-mode-switch">
+        <button id="modeExplorerBtn" class="mode-tab-btn active">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
+          File Explorer
+        </button>
+        <button id="modeDecisionTreeBtn" class="mode-tab-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+          </svg>
+          Decision Tree View
+        </button>
+      </div>
+
+      <div class="header-search">
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" id="searchInput" placeholder="Search files & folders by name or path..." autocomplete="off">
+        <button id="clearSearchBtn" class="icon-btn search-clear hidden" title="Clear search">✕</button>
+      </div>
+
+      <div class="header-actions">
+        <div class="theme-select-container">
+          <label for="themeSelect" class="theme-select-label">Theme:</label>
+          <select id="themeSelect" class="form-select-sm theme-dropdown">
+            <option value="theme-formal-slate" selected>Formal Slate (Enterprise)</option>
+            <option value="theme-formal-academic">Formal Academic (Paper Light)</option>
+            <option value="theme-formal-midnight">Formal Midnight (Dark)</option>
+          </select>
+        </div>
+        <button id="newFolderBtn" class="btn btn-secondary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            <line x1="12" y1="11" x2="12" y2="17"></line>
+            <line x1="9" y1="14" x2="15" y2="14"></line>
+          </svg>
+          New Folder
+        </button>
+        <button id="newFileBtn" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="12" y1="18" x2="12" y2="12"></line>
+            <line x1="9" y1="15" x2="15" y2="15"></line>
+          </svg>
+          New File
+        </button>
+
+        <div class="dropdown">
+          <button id="moreActionsBtn" class="btn btn-ghost icon-only" title="More Hierarchy Options">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="1"></circle>
+              <circle cx="12" cy="5" r="1"></circle>
+              <circle cx="12" cy="19" r="1"></circle>
+            </svg>
+          </button>
+          <div id="moreMenu" class="dropdown-menu hidden">
+            <button id="exportJsonBtn" class="dropdown-item">
+              <span>📥</span> Export Hierarchy (JSON)
+            </button>
+            <label class="dropdown-item file-input-label">
+              <span>📤</span> Import Hierarchy (JSON)
+              <input type="file" id="importJsonInput" accept=".json" style="display:none">
+            </label>
+            <div class="dropdown-divider"></div>
+            <button id="resetDataBtn" class="dropdown-item text-danger">
+              <span>🔄</span> Reset to Default Tree
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace Split-Pane -->
+    <main class="app-workspace">
+      <!-- Left Panel: Hierarchical Tree Navigation -->
+      <aside class="workspace-sidebar" id="sidebarPanel">
+        <div class="panel-header">
+          <span class="panel-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+              <polyline points="2 17 12 22 22 17"></polyline>
+              <polyline points="2 12 12 17 22 12"></polyline>
+            </svg>
+            TREE VIEW
+          </span>
+          <div class="panel-tools">
+            <button id="expandAllBtn" class="icon-btn-sm" title="Expand All Folders">Expand</button>
+            <button id="collapseAllBtn" class="icon-btn-sm" title="Collapse All Folders">Collapse</button>
+          </div>
+        </div>
+
+        <div class="tree-container" id="treeContainer">
+          <!-- Tree Nodes injected via JS -->
+        </div>
+      </aside>
+
+      <!-- Center Panel: Active Folder Explorer View OR Decision Tree View -->
+      <section class="workspace-explorer">
+        <!-- VIEW 1: Standard File Explorer -->
+        <div id="explorerViewContainer" class="explorer-view-pane">
+          <!-- Navigation Breadcrumbs Bar -->
+          <nav class="explorer-nav-bar">
+            <div class="nav-controls">
+              <button id="navUpBtn" class="icon-btn" title="Go to Parent Folder">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 19V5M5 12l7-7 7 7"/>
+                </svg>
+              </button>
+              <div class="breadcrumbs" id="breadcrumbsContainer">
+                <!-- Breadcrumbs rendered dynamically -->
+              </div>
+            </div>
+
+            <div class="view-toggles">
+              <span class="item-count-label" id="currentFolderCount">0 items</span>
+              <div class="toggle-group">
+                <button id="viewGridBtn" class="toggle-btn active" title="Grid View">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                  </svg>
+                </button>
+                <button id="viewListBtn" class="toggle-btn" title="List View">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </nav>
+
+          <!-- Search Notification Bar (Shown during search) -->
+          <div id="searchBanner" class="search-banner hidden">
+            <span>Search results for "<strong id="searchQueryText"></strong>"</span>
+            <button id="exitSearchBtn" class="btn-link">Clear & Exit</button>
+          </div>
+
+          <!-- Explorer Items Canvas -->
+          <div class="explorer-content" id="explorerContent">
+            <!-- Folder / File item cards rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- VIEW 2: Decision Tree Visualizer -->
+        <div id="decisionTreeViewContainer" class="decision-tree-view-pane hidden">
+          <!-- Decision Tree Toolbar -->
+          <div class="decision-tree-toolbar">
+            <div class="dt-controls-left">
+              <div class="dt-control-item">
+                <span class="dt-label">Orientation:</span>
+                <select id="dtOrientationSelect" class="form-select-sm">
+                  <option value="horizontal">Horizontal (LR)</option>
+                  <option value="vertical">Vertical (TD)</option>
+                </select>
+              </div>
+              <label class="dt-checkbox-label">
+                <input type="checkbox" id="dtShowFilesCheckbox" checked>
+                <span>Include File Leaves</span>
+              </label>
+              <div class="dt-legend">
+                <span class="legend-item"><span class="legend-dot root-dot"></span>Root</span>
+                <span class="legend-item"><span class="legend-dot decision-dot"></span>Branch Decision</span>
+                <span class="legend-item"><span class="legend-dot leaf-dot"></span>File Outcome</span>
+              </div>
+            </div>
+
+            <!-- Interactive Classification Routing Simulator -->
+            <div class="dt-simulator-bar">
+              <span class="dt-sim-badge">⚡ Decision Simulator:</span>
+              <div class="dt-sim-input-group">
+                <input type="text" id="dtSimulateInput" placeholder="File name e.g. script.js, report.pdf..." value="project_specs.md">
+                <button id="dtSimulateBtn" class="btn btn-primary btn-sm">Trace Path</button>
+                <button id="dtResetTraceBtn" class="btn btn-secondary btn-sm">Clear</button>
+              </div>
+              <div class="dt-preset-chips">
+                <button class="preset-chip" data-sample="meeting_agenda.docx">meeting.docx</button>
+                <button class="preset-chip" data-sample="frontend_app.js">app.js</button>
+                <button class="preset-chip" data-sample="profile_picture.png">picture.png</button>
+                <button class="preset-chip" data-sample="database_settings.json">settings.json</button>
+              </div>
+            </div>
+
+            <div class="dt-zoom-controls">
+              <button id="dtZoomInBtn" class="icon-btn-sm" title="Zoom In">+</button>
+              <button id="dtZoomOutBtn" class="icon-btn-sm" title="Zoom Out">−</button>
+              <button id="dtZoomResetBtn" class="icon-btn-sm" title="Reset View">100%</button>
+            </div>
+          </div>
+
+          <!-- Step-by-Step Decision Trace Explanation Banner -->
+          <div id="dtTraceBanner" class="dt-trace-banner hidden">
+            <div class="dt-trace-header">
+              <span class="trace-title">Decision Path Evaluation:</span>
+              <span id="dtTraceStatus" class="trace-status">Classified</span>
+            </div>
+            <div id="dtTraceSteps" class="dt-trace-steps">
+              <!-- Steps rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Interactive SVG Decision Tree Graph -->
+          <div class="decision-tree-canvas-wrapper" id="dtCanvasWrapper">
+            <svg id="decisionTreeSvg" class="decision-tree-svg" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="edgeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.7"/>
+                  <stop offset="100%" stop-color="#60a5fa" stop-opacity="0.9"/>
+                </linearGradient>
+                <filter id="glowEffect" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+              <g id="dtViewportGroup">
+                <g id="dtEdgesLayer"></g>
+                <g id="dtNodesLayer"></g>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Panel: Node Inspector & Hierarchy Details -->
+      <aside class="workspace-inspector" id="inspectorPanel">
+        <div class="panel-header">
+          <span class="panel-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            NODE PROPERTIES
+          </span>
+        </div>
+
+        <div class="inspector-body" id="inspectorBody">
+          <!-- Inspector details rendered dynamically -->
+        </div>
+      </aside>
+    </main>
+
+    <!-- Bottom Status Bar -->
+    <footer class="app-statusbar">
+      <div class="status-item">
+        <span class="status-dot"></span>
+        <span id="systemStatus">Ready</span>
+      </div>
+      <div class="status-item">
+        <span class="status-muted">Tree Depth:</span>
+        <strong id="maxDepthMetric">0 levels</strong>
+      </div>
+      <div class="status-item">
+        <span class="status-muted">Total Elements:</span>
+        <strong id="totalNodesMetric">0</strong> (<span id="totalFoldersMetric">0 folders</span>, <span id="totalFilesMetric">0 files</span>)
+      </div>
+      <div class="status-item ml-auto">
+        <span class="status-muted">Storage:</span> LocalStorage Cached
+      </div>
+    </footer>
+  </div>
+
+  <!-- Modal Dialog: Create Node (Folder or File) -->
+  <div id="createModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalTitle">Create New Element</h3>
+        <button class="modal-close-btn" data-close="createModal">✕</button>
+      </div>
+      <form id="createForm" class="modal-form">
+        <div class="form-group">
+          <label for="createNameInput">Name</label>
+          <input type="text" id="createNameInput" placeholder="e.g. quarterly_report.md or Projects" required autofocus>
+          <span class="form-hint" id="createNameHint">Include file extension (e.g., .txt, .json, .js, .md)</span>
+        </div>
+
+        <div class="form-group" id="fileContentGroup">
+          <label for="createContentInput">Initial Content (Optional)</label>
+          <textarea id="createContentInput" rows="4" placeholder="Type initial file contents here..."></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" data-close="createModal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="confirmCreateBtn">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Dialog: Rename Node -->
+  <div id="renameModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Rename Item</h3>
+        <button class="modal-close-btn" data-close="renameModal">✕</button>
+      </div>
+      <form id="renameForm" class="modal-form">
+        <input type="hidden" id="renameNodeId">
+        <div class="form-group">
+          <label for="renameInput">New Name</label>
+          <input type="text" id="renameInput" required autofocus>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" data-close="renameModal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Rename</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Dialog: Move Node to Folder -->
+  <div id="moveModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Move Item in Hierarchy</h3>
+        <button class="modal-close-btn" data-close="moveModal">✕</button>
+      </div>
+      <form id="moveForm" class="modal-form">
+        <input type="hidden" id="moveNodeId">
+        <p class="modal-desc">Select target parent directory for <strong id="moveItemName"></strong>:</p>
+        <div class="form-group">
+          <label for="targetFolderSelect">Destination Folder</label>
+          <select id="targetFolderSelect" class="form-select" required></select>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" data-close="moveModal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Move Here</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Dialog: Delete Confirmation -->
+  <div id="deleteModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="text-danger">Delete Confirmation</h3>
+        <button class="modal-close-btn" data-close="deleteModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="deletePromptText">Are you sure you want to permanently delete this item?</p>
+        <p class="text-warning-box" id="deleteWarningSubtree">
+          ⚠️ Deleting a folder will recursively remove all its subfolders and contained files!
+        </p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" data-close="deleteModal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
